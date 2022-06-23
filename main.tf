@@ -562,4 +562,75 @@ resource "aws_lb_listener" "APP_ELB_Listener_HTTP" {
   }
 }
 
+####################################################
+## Autosclaing for WEB Tier
+#####################################################
+
+# Create Launch Configuration #
+
+resource "aws_launch_configuration" "web_launch_config" {
+  name_prefix                 = "WEB-Autoscaling"
+  image_id                    = "ami-0e8e39877665a7c92" #Amazon Linux 2 AMI
+  instance_type               = "t2.micro"
+  key_name                    = "bootcamp"
+  associate_public_ip_address = true
+  security_groups             = [aws_security_group.Allow_Web_Traffic.id]
+
+  
+lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# Create Auto Scaling Group #
+
+resource "aws_autoscaling_group" "autoscaling_group" {
+  launch_configuration = "${aws_launch_configuration.web_launch_config.id}"
+  min_size             = "2"
+  max_size             = "3"
+  target_group_arns    = [aws_lb_target_group.ELB_Target_Group1.arn]
+  vpc_zone_identifier  = [aws_subnet.Public_Subnet_Web2.id, aws_subnet.Public_Subnet_Web1.id]
+
+  tag {
+    key                 = "Name"
+    value               = "WEB-Server"
+    propagate_at_launch = true
+  }
+}
+
+####################################################
+## Autosclaing for APP Tier
+#####################################################
+
+# Create Launch Configuration #
+
+resource "aws_launch_configuration" "app_launch_config" {
+  name_prefix                 = "APP-Autoscaling"
+  image_id                    = "ami-0e8e39877665a7c92" #Amazon Linux 2 AMI
+  instance_type               = "t2.micro"
+  key_name                    = "bootcamp"
+  associate_public_ip_address = false
+  security_groups             = [aws_security_group.Allow_APP_Traffic.id]
+
+  
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# Create Auto Scaling Group #
+
+resource "aws_autoscaling_group" "app_autoscaling_group" {
+  launch_configuration = "${aws_launch_configuration.app_launch_config.id}"
+  min_size             = "2"
+  max_size             = "3"
+  target_group_arns    = [aws_lb_target_group.ELB_Target_Group2.arn]
+  vpc_zone_identifier  = [aws_subnet.Private_Subnet_App1.id, aws_subnet.Private_Subnet_App2.id]
+
+  tag {
+    key                 = "Name"
+    value               = "APP-Server"
+    propagate_at_launch = true
+  }
+}
 
