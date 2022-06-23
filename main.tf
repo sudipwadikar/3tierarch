@@ -74,7 +74,7 @@ resource "aws_nat_gateway" "Nat_Gateway1" {
   subnet_id         = aws_subnet.Public_Subnet_Web1.id  ##changed
 
   tags = {
-    Name = "NAT_Gateway1_Assignment_VPC"
+    Name = "NAT_Gateway1"
   }
 
 }
