@@ -258,3 +258,112 @@ resource "aws_security_group" "Allow_APP_Traffic" {
   }
 }
 
+## Create Route Table for Private Subnet
+
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.MFP_VPC.id
+  
+  tags = {
+      Name = "Private-RT"
+  }
+}
+
+resource "aws_route" "private1" {
+  
+  route_table_id = aws_route_table.private.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id = aws_nat_gateway.Nat_Gateway1.id
+}
+
+## Route Table Association for Private subnet
+
+resource "aws_route_table_association" "private1" {
+  route_table_id = aws_route_table.private.id
+  subnet_id = aws_subnet.Private_Subnet_App1.id
+}
+
+resource "aws_route_table_association" "private2" {
+  route_table_id = aws_route_table.private.id
+  subnet_id = aws_subnet.Private_Subnet_App2.id
+}
+
+
+############# Database Tier ####################
+
+## Create Database Subnets #
+
+resource "aws_subnet" "Private_Subnet_DB2" {
+  vpc_id     = aws_vpc.MFP_VPC.id
+  cidr_block = "10.0.0.80/28"
+  availability_zone = "ap-southeast-1b"
+  map_public_ip_on_launch = "false"
+
+  tags = {
+    Name = "Private_Subnet_DB2"
+  }
+}
+
+resource "aws_subnet" "Private_Subnet_DB1" {
+  vpc_id     = aws_vpc.MFP_VPC.id
+  cidr_block = "10.0.0.96/28"
+  availability_zone = "ap-southeast-1a"
+  map_public_ip_on_launch = "false"
+
+  tags = {
+    Name = "Private_Subnet_DB1"
+  }
+}
+
+## Create Subnet Group
+
+resource "aws_db_subnet_group" "db-subnet" {
+  name = "db subnet group"
+  subnet_ids = ["${aws_subnet.Private_Subnet_DB1.id}", "${aws_subnet.Private_Subnet_DB2.id}"]
+}
+
+# Create Security Group for Private RDS Subnet #
+
+resource "aws_security_group" "Allow_DB_Traffic" {
+  name        = "allow_DB_ssh_traffic"
+  description = "Allow inbound 3306"
+  vpc_id      = aws_vpc.MFP_VPC.id
+
+  ingress {
+    description      = "MYSQL"
+    from_port        = 3306
+    to_port          = 3306
+    protocol         = "tcp"
+    cidr_blocks      = ["10.0.0.80/28", "10.0.0.96/28"]
+#   ipv6_cidr_blocks = [aws_vpc.main.ipv6_cidr_block]
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+#   ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name = "Allow_RDS_Access"
+  }
+}
+
+## Create MySQL DB Instance 
+
+resource "aws_db_instance" "RDS-Test" {
+  allocated_storage    =  20
+  engine               = "mysql"
+  engine_version       = "5.7"
+  instance_class       = "db.t2.micro"
+  name                 = "mydb"
+  username             = "admin"
+  password             = "password123"
+  skip_final_snapshot  = true
+  vpc_security_group_ids   =  [aws_security_group.Allow_DB_Traffic.id]
+  parameter_group_name = "default.mysql5.7"
+  db_subnet_group_name = aws_db_subnet_group.db-subnet.name
+  multi_az             = false
+}
+
