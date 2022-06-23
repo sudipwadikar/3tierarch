@@ -367,3 +367,104 @@ resource "aws_db_instance" "RDS-Test" {
   multi_az             = false
 }
 
+# Create Application Load Balancer #
+
+# Create Security Group for Public ALB Subnet #
+
+resource "aws_security_group" "Allow_ELB_Web_Traffic" {
+  name        = "allow_ELB_web_traffic"
+  description = "Allow inbound 80,443"
+  vpc_id      = aws_vpc.MFP_VPC.id
+
+  ingress {
+    description      = "HTTPS"
+    from_port        = 443
+    to_port          = 443
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+#   ipv6_cidr_blocks = [aws_vpc.main.ipv6_cidr_block]
+  }
+
+  ingress {
+    description      = "HTTP"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+#   ipv6_cidr_blocks = [aws_vpc.main.ipv6_cidr_block]
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+#   ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name = "Allow_ELB_WEB_Access"
+  }
+}
+
+# Create ALB #
+
+resource "aws_lb" "WEB_ALB" {
+  name               = "WEB-ALB"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.Allow_ELB_Web_Traffic.id]
+  subnets            = [aws_subnet.Public_Subnet_Web2.id, aws_subnet.Public_Subnet_Web1.id]         # aws_subnet.public.*.id
+
+  enable_deletion_protection = false
+
+#  access_logs {
+#    bucket  = aws_s3_bucket.lb_logs.bucket
+#    prefix  = "test-lb"
+#    enabled = true
+#  }
+
+  tags = {
+    Name = "WEB_Load_Balancer"
+  }
+}
+
+# Create Target Group #
+
+resource "aws_lb_target_group" "ELB_Target_Group1" {
+  name     = "ELB-Target-Group1"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.MFP_VPC.id
+
+
+ # Alter the destination of the health check to be the login page.
+  
+  health_check {
+    path = "/index.html"
+    port = 80
+    healthy_threshold   = 3
+    unhealthy_threshold = 5
+    timeout             = 10
+#   target              = "HTTP:8000/"
+    interval            = 30
+    protocol            = "HTTP"
+
+  }
+}
+
+# Create Listeners HTTP/HTTPS#
+
+resource "aws_lb_listener" "WEB_ELB_Listener_HTTP" {
+  load_balancer_arn = aws_lb.WEB_ALB.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.ELB_Target_Group1.arn
+  }
+}
+
+
+
