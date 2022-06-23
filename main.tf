@@ -158,3 +158,63 @@ resource "aws_route_table_association" "public2" {
   subnet_id = aws_subnet.Public_Subnet_Web2.id
   route_table_id = aws_route_table.Route_Table.id
 }
+
+######################################################
+## Create Bastion Host to access App servers with SSH
+######################################################
+
+## Create Security Group for Bastion host
+
+resource "aws_security_group" "sg-bastion" {
+  name   = "bastion-security-group"
+  vpc_id = aws_vpc.MFP_VPC.id
+
+  ingress {
+    protocol    = "tcp"
+    from_port   = 22
+    to_port     = 22
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    protocol    = -1
+    from_port   = 0 
+    to_port     = 0 
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+
+resource "aws_instance" "bastion-host" {
+  ami                         = "ami-0e8e39877665a7c92"
+  key_name                    = "bootcamp"
+  instance_type               = "t2.micro"
+  subnet_id = aws_subnet.Public_Subnet_Web2.id
+  vpc_security_group_ids            = [aws_security_group.sg-bastion.id]
+  associate_public_ip_address = true
+}
+
+##############  Application Tier ############
+
+# Create Private Subnet #
+
+resource "aws_subnet" "Private_Subnet_App1" {
+  vpc_id     = aws_vpc.MFP_VPC.id
+  cidr_block = "10.0.0.48/28"
+  availability_zone = "ap-southeast-1a"
+  map_public_ip_on_launch = "false"
+
+  tags = {
+    Name = "Private_Subnet_App1"
+  }
+}
+
+resource "aws_subnet" "Private_Subnet_App2" {
+  vpc_id     = aws_vpc.MFP_VPC.id
+  cidr_block = "10.0.0.64/28"
+  availability_zone = "ap-southeast-1b"
+  map_public_ip_on_launch = "false"
+
+  tags = {
+    Name = "Private_Subnet_App2"
+  }
+}
