@@ -21,7 +21,7 @@ resource "aws_vpc" "MFP_VPC" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = "Assignment_VPC"
+    Name = "Demo_VPC"
   }
 
 }
@@ -426,13 +426,7 @@ resource "aws_lb" "WEB_ALB" {
   subnets            = [aws_subnet.Public_Subnet_Web2.id, aws_subnet.Public_Subnet_Web1.id]         # aws_subnet.public.*.id
 
   enable_deletion_protection = false
-
-#  access_logs {
-#    bucket  = aws_s3_bucket.lb_logs.bucket
-#    prefix  = "test-lb"
-#    enabled = true
-#  }
-
+	
   tags = {
     Name = "WEB_Load_Balancer"
   }
@@ -446,12 +440,7 @@ resource "aws_lb_target_group" "ELB_Target_Group1" {
   protocol = "HTTP"
   vpc_id   = aws_vpc.MFP_VPC.id
   
-
-#stickiness {
- #   type = "source_ip"
-  #}
-
- # Alter the destination of the health check to be the login page.
+# Alter the destination of the health check to be the login page.
   
   health_check {
     path = "/index.html"
@@ -478,21 +467,6 @@ resource "aws_lb_listener" "WEB_ELB_Listener_HTTP" {
     target_group_arn = aws_lb_target_group.ELB_Target_Group1.arn
   }
 }
-
-# resource "aws_lb_listener" "WEB_ELB_Listener_HTTPS" {
-#   load_balancer_arn = aws_lb.WEB_ELB.arn
-#   port              = "443"
-#   protocol          = "HTTPS"
-#   ssl_policy        = "ELBSecurityPolicy-2016-08"
-#   certificate_arn   = "arn:aws:iam::187416307283:server-certificate/test_cert_rab3wuqwgja25ct3n4jdj2tzu4"
-# 
-#   default_action {
-#     type             = "forward"
-#     target_group_arn = aws_lb_target_group.ELB_Target_Group1.arn
-#   }
-# }
-
-
 # Create Internal Application Load Balancer #
 
 # Create Security Group for Private ALB Subnet #
@@ -544,12 +518,6 @@ resource "aws_lb" "APP_ALB" {
 
   enable_deletion_protection = false
 
-#  access_logs {
-#    bucket  = aws_s3_bucket.lb_logs.bucket
-#    prefix  = "test-lb"
-#    enabled = true
-#  }
-
   tags = {
     Name = "APP_Load_Balancer"
   }
@@ -563,12 +531,7 @@ resource "aws_lb_target_group" "ELB_Target_Group2" {
   protocol = "HTTP"
   vpc_id   = aws_vpc.MFP_VPC.id
   
-
-#stickiness {
- #   type = "source_ip"
-  #}
-
- # Alter the destination of the health check to be the login page.
+# Alter the destination of the health check to be the login page.
   
   health_check {
     path = "/index.html"
