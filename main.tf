@@ -21,10 +21,11 @@ resource "aws_vpc" "MFP_VPC" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = "Demo_VPC"
+    Name = "Assignment_VPC"
   }
 
 }
+
 # Create Public Subnet #
 
 resource "aws_subnet" "Public_Subnet_Web1" {
@@ -48,6 +49,7 @@ resource "aws_subnet" "Public_Subnet_Web2" {
     Name = "Public_Subnet_Web2"
   }
 }
+
 # Create Internet Gateway [IGW] #
 
 resource "aws_internet_gateway" "Internet_Gateway" {
@@ -80,38 +82,30 @@ resource "aws_nat_gateway" "Nat_Gateway1" {
 output "nat_gateway_ip1" {
   value = aws_eip.nat_gateway1.public_ip
 }
-# Create Internet Gateway [IGW] #
-
-resource "aws_internet_gateway" "Internet_Gateway" {
-  vpc_id = aws_vpc.MFP_VPC.id
-
-  tags = {
-    Name = "IGW_Assignment_VPC"
-  }
-}
 
 # Create EIP
 
-resource "aws_eip" "nat_gateway1" {
+resource "aws_eip" "nat_gateway" {
   vpc = true
 }
 
 # Create NAT Gateway #
 
-resource "aws_nat_gateway" "Nat_Gateway1" {
+resource "aws_nat_gateway" "Nat_Gateway2" {
 #  connectivity_type = "private"
-  allocation_id     = aws_eip.nat_gateway1.id
-  subnet_id         = aws_subnet.Public_Subnet_Web1.id
+  allocation_id     = aws_eip.nat_gateway.id
+  subnet_id         = aws_subnet.Public_Subnet_Web2.id
 
   tags = {
-    Name = "NAT_Gateway1_Assignment_VPC"
+    Name = "NAT_Gateway2_Assignment_VPC"
   }
 
 }
 
-output "nat_gateway_ip1" {
-  value = aws_eip.nat_gateway1.public_ip
+output "nat_gateway_ip" {
+  value = aws_eip.nat_gateway.public_ip
 }
+
 # Create Security Group for Public Web Subnet #
 
 resource "aws_security_group" "Allow_Web_Traffic" {
